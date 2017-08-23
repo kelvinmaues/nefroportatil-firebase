@@ -28,7 +28,7 @@ exports.makeUppercase = functions.database.ref('/messages/{pushId}/original')
 // [END makeUppercase]
 // [END all]
 
-  const limitsDailyProportion = (fosforo, potassio, sodio) => {
+  const percentualNutricional = (fosforo, potassio, sodio) => {
 
     const fosforoPercentual = fosforo/fosforoDailyLimit
     const potassioPercentual = potassio/potassioDailyLimit
@@ -59,11 +59,11 @@ exports.calculoLimitesDiarios = functions.database.ref('/users/{userId}/consumo_
     for (var obj in json){
       fosforoTotalDiario += json[obj].nutrientes_consumidos.fosforoTotal
       potassioTotalDiario += json[obj].nutrientes_consumidos.potassioTotal
-      sodioTotalDiario += json[obj].nutrientes_consumidos.sodioTotal
+      sodioTotalDiario += (json[obj].nutrientes_consumidos.sodioTotal)/1000.0
       //arrJSON.push(json[obj]);
     }
     //console.log('arrJSON', arrJSON)
-    const percentualAtingido = limitsDailyProportion(fosforoTotalDiario, potassioTotalDiario, sodioTotalDiario);
+    const percentualAtingido = percentualNutricional(fosforoTotalDiario, potassioTotalDiario, sodioTotalDiario);
     const limite_nutricional = {
       fosforo: fosforoTotalDiario, 
       potassio: potassioTotalDiario, 
@@ -74,17 +74,13 @@ exports.calculoLimitesDiarios = functions.database.ref('/users/{userId}/consumo_
     console.log('Percentual dos Nutrientes Diários =>', percentualAtingido.fosforo, percentualAtingido.potassio, percentualAtingido.sodio)
     
     const limites_diarios = {
-      limite_percentual: percentualAtingido,
-      limite_nutricional: limite_nutricional
+      limite_percentual_atingido: percentualAtingido,
+      limite_nutricional_atingido: limite_nutricional
     };
+    
+    console.log(limites_diarios);
 
-    //const newPostKey = functions.database().ref('users/' + event.params.userId).child('limites_diarios').push();
-
-    const updates = {};
-
-    return event.data.ref('users/' + event.params.userId).parent.child('/limites_diarios/' + event.params.date + '/').set(limites_diarios);
-
-
-	});
+    return admin.database().ref('/users/' + event.params.userId + '/limites_diarios/' + event.params.date + '/').set(limites_diarios);
+});
 // [END makeUppercase]
 // [END all]
