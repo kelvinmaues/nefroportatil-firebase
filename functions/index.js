@@ -7,41 +7,31 @@ admin.initializeApp(functions.config().firebase);
 const sodioDailyLimit = 4;
 const fosforoDailyLimit = 800;
 const potassioDailyLimit = 1000;
-// [START makeUppercase]
-// Listens for new messages added to /messages/:pushId/original and creates an
-// uppercase version of the message to /messages/:pushId/uppercase
-// [START makeUppercaseTrigger]
-exports.makeUppercase = functions.database.ref('/messages/{pushId}/original')
-    .onWrite(event => {
-// [END makeUppercaseTrigger]
-      // [START makeUppercaseBody]
-      // Grab the current value of what was written to the Realtime Database.
-      const original = event.data.val();
-      console.log('Uppercasing', event.params.pushId, original);
-      const uppercase = original.toUpperCase();
-      // You must return a Promise when performing asynchronous tasks inside a Functions such as
-      // writing to the Firebase Realtime Database.
-      // Setting an "uppercase" sibling in the Realtime Database returns a Promise.
-      return event.data.ref.parent.child('uppercase').set(uppercase);
-      // [END makeUppercaseBody]
-    });
-// [END makeUppercase]
-// [END all]
+const hidricoDailyLimit = 500;
 
-  const percentualNutricional = (fosforo, potassio, sodio) => {
+// Function to calculate percentual of nutrients
+const percentualNutricional = (fosforo, potassio, sodio) => {
+  const fosforoPercentual = fosforo/fosforoDailyLimit
+  const potassioPercentual = potassio/potassioDailyLimit
+  const sodioPercentual = sodio/sodioDailyLimit
 
-    const fosforoPercentual = fosforo/fosforoDailyLimit
-    const potassioPercentual = potassio/potassioDailyLimit
-    const sodioPercentual = sodio/sodioDailyLimit
+  const percentualAtingido = {
+    fosforo: fosforoPercentual,
+    potassio: potassioPercentual,
+    sodio: sodioPercentual
+  };
 
-    const percentualAtingido = {
-      fosforo: fosforoPercentual,
-      potassio: potassioPercentual,
-      sodio: sodioPercentual
-    };
+  return percentualAtingido;
+}
 
-    return percentualAtingido;
-  }
+// Function to calculate percentual hidric
+const percentualHidrico = (hidrico) => {
+
+  const percentualHidricoAtingido = hidrico/hidricoDailyLimit;
+
+  return percentualHidricoAtingido;
+
+}
 
 // [START calculoLimitesDiarios]
 // Listens for new user insertions added to /users/{userId}/consumo_alimentar/{date} and calculate
@@ -51,19 +41,25 @@ exports.calculoLimitesDiarios = functions.database.ref('/users/{userId}/consumo_
     var fosforoTotalDiario = 0;
     var potassioTotalDiario = 0;
     var sodioTotalDiario = 0;
+    var hidricoTotalDiario = 0;
+
 		console.log('User Params ID', event.params.userId)
     console.log('Event Params Date', event.params.date)
     console.log('Data', event.data)
+    
     const json = event.data.val();
     //const arrJSON = [];
     for (var obj in json){
       fosforoTotalDiario += json[obj].nutrientes_consumidos.fosforoTotal
       potassioTotalDiario += json[obj].nutrientes_consumidos.potassioTotal
       sodioTotalDiario += (json[obj].nutrientes_consumidos.sodioTotal)/1000.0
+      hidricoTotalDiario += json[obj].volume_hidrico_consumido
       //arrJSON.push(json[obj]);
     }
     //console.log('arrJSON', arrJSON)
     const percentualAtingido = percentualNutricional(fosforoTotalDiario, potassioTotalDiario, sodioTotalDiario);
+    const volumePercentualAtingido = percentualHidrico(hidricoTotalDiario);
+
     const limite_nutricional = {
       fosforo: fosforoTotalDiario, 
       potassio: potassioTotalDiario, 
@@ -72,10 +68,13 @@ exports.calculoLimitesDiarios = functions.database.ref('/users/{userId}/consumo_
 
     console.log('Nutrientes Totais => ', fosforoTotalDiario, potassioTotalDiario, sodioTotalDiario)
     console.log('Percentual dos Nutrientes Diários =>', percentualAtingido.fosforo, percentualAtingido.potassio, percentualAtingido.sodio)
+    console.log('Volume Hídrico Diário =>', volumePercentualAtingido + ' %', hidricoTotalDiario + ' ml')
     
     const limites_diarios = {
       limite_percentual_atingido: percentualAtingido,
-      limite_nutricional_atingido: limite_nutricional
+      limite_nutricional_atingido: limite_nutricional,
+      limite_percentual_hidrico:  volumePercentualAtingido,
+      limite_volume_hidrico: hidricoTotalDiario
     };
     
     console.log(limites_diarios);
