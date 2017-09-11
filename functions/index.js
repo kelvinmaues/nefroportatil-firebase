@@ -1,6 +1,9 @@
 const functions = require('firebase-functions');
+var Expo = require('expo-server-sdk');
+// Create a new Expo SDK client
+var expo = new Expo();
 
-// The Firebase Admin SDK to access the Firebase Realtime Database. 
+// The Firebase Admin SDK to access the Firebase Realtime Database.
 const admin = require('firebase-admin');
 admin.initializeApp(functions.config().firebase);
 // [END import]
@@ -16,9 +19,9 @@ const percentualNutricional = (fosforo, potassio, sodio) => {
   const sodioPercentual = sodio/sodioDailyLimit
 
   const percentualAtingido = {
-    fosforo: fosforoPercentual,
-    potassio: potassioPercentual,
-    sodio: sodioPercentual
+    fosforo: fosforoPercentual.toPrecision(2),
+    potassio: potassioPercentual.toPrecision(2),
+    sodio: sodioPercentual.toPrecision(2)
   };
 
   return percentualAtingido;
@@ -29,7 +32,7 @@ const percentualHidrico = (hidrico) => {
 
   const percentualHidricoAtingido = hidrico/hidricoDailyLimit;
 
-  return percentualHidricoAtingido;
+  return percentualHidricoAtingido.toPrecision(2);
 
 }
 
@@ -38,15 +41,20 @@ const percentualHidrico = (hidrico) => {
 // daily limits and write the new data to /users/{userId}/limites_diarios/{date}
 exports.calculoLimitesDiarios = functions.database.ref('/users/{userId}/consumo_alimentar/{date}')
 	.onWrite(event => {
+    // Inicialização dos valores dos nutrientes para cálculo
     var fosforoTotalDiario = 0;
     var potassioTotalDiario = 0;
     var sodioTotalDiario = 0;
     var hidricoTotalDiario = 0;
+    var messages = [];
 
-		console.log('User Params ID', event.params.userId)
+    // Obtem o Expo token do usuário
+    const userUid = event.params.userId;
+
+		console.log('Usuário ID', event.params.userId)
     console.log('Event Params Date', event.params.date)
     console.log('Data', event.data)
-    
+
     const json = event.data.val();
     //const arrJSON = [];
     for (var obj in json){
@@ -57,26 +65,26 @@ exports.calculoLimitesDiarios = functions.database.ref('/users/{userId}/consumo_
       //arrJSON.push(json[obj]);
     }
     //console.log('arrJSON', arrJSON)
-    const percentualAtingido = percentualNutricional(fosforoTotalDiario, potassioTotalDiario, sodioTotalDiario);
+    const percentualNutricionalAtingido = percentualNutricional(fosforoTotalDiario, potassioTotalDiario, sodioTotalDiario);
     const volumePercentualAtingido = percentualHidrico(hidricoTotalDiario);
 
     const limite_nutricional = {
-      fosforo: fosforoTotalDiario, 
-      potassio: potassioTotalDiario, 
-      sodio: sodioTotalDiario
+      fosforo: fosforoTotalDiario.toFixed(),
+      potassio: potassioTotalDiario.toFixed(),
+      sodio: sodioTotalDiario.toFixed(1)
     }
 
     console.log('Nutrientes Totais => ', fosforoTotalDiario, potassioTotalDiario, sodioTotalDiario)
-    console.log('Percentual dos Nutrientes Diários =>', percentualAtingido.fosforo, percentualAtingido.potassio, percentualAtingido.sodio)
+    console.log('Percentual dos Nutrientes Diários =>', percentualNutricionalAtingido.fosforo, percentualNutricionalAtingido.potassio, percentualNutricionalAtingido.sodio)
     console.log('Volume Hídrico Diário =>', volumePercentualAtingido + ' %', hidricoTotalDiario + ' ml')
-    
+
     const limites_diarios = {
-      limite_percentual_atingido: percentualAtingido,
+      limite_percentual_atingido: percentualNutricionalAtingido,
       limite_nutricional_atingido: limite_nutricional,
       limite_percentual_hidrico:  volumePercentualAtingido,
       limite_volume_hidrico: hidricoTotalDiario
     };
-    
+
     console.log(limites_diarios);
 
     return admin.database().ref('/users/' + event.params.userId + '/limites_diarios/' + event.params.date + '/').set(limites_diarios);
