@@ -79,8 +79,12 @@ exports.calculoLimitesDiarios = functions.database.ref('/users/{userId}/consumo_
     console.log('Volume Hídrico Diário =>', volumePercentualAtingido + ' %', hidricoTotalDiario + ' ml')
 
     const limites_diarios = {
-      limite_percentual_atingido: percentualNutricionalAtingido,
-      limite_nutricional_atingido: limite_nutricional,
+      limite_nutricional: {
+        limite_percentual_atingido: percentualNutricionalAtingido,
+        limite_nutricional_atingido: limite_nutricional,
+        limite_percentual_hidrico:  volumePercentualAtingido,
+        limite_volume_hidrico: hidricoTotalDiario
+      },
       limite_percentual_hidrico:  volumePercentualAtingido,
       limite_volume_hidrico: hidricoTotalDiario
     };
