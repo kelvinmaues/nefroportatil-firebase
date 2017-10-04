@@ -94,4 +94,23 @@ exports.calculoLimitesDiarios = functions.database.ref('/users/{userId}/consumo_
     return admin.database().ref('/users/' + event.params.userId + '/limites_diarios/' + event.params.date + '/').set(limites_diarios);
 });
 // [END makeUppercase]
+
+// [START limiteHidricoDiario]
+// Listens for new messages added to /messages/:pushId/original and creates an
+// uppercase version of the message to /messages/:pushId/uppercase
+exports.limiteHidricoDiario = functions.database.ref('/users/{userId}/volume_urinario')
+    .onWrite(event => {
+      // Grab the current value of what was written to the Realtime Database.
+      const volumeUrinario = event.data.val();
+
+      const limiteHidrico = hidricoDailyLimit + volumeUrinario;
+
+      console.log('Volume Urinário', limiteHidrico);
+      // You must return a Promise when performing asynchronous tasks inside a Functions such as
+      // writing to the Firebase Realtime Database.
+      // Setting an "uppercase" sibling in the Realtime Database returns a Promise.
+      return admin.database().ref('/users/' + event.params.userId + '/limite_hidrico_diario/').set(limiteHidrico);
+      //return event.data.ref.parent.child('limite_hidrico_diario').set(limiteHidrico);
+    });
+// [END limiteHidricoDiario]
 // [END all]
