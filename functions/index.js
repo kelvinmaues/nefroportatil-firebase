@@ -7,34 +7,36 @@ var expo = new Expo();
 const admin = require('firebase-admin');
 admin.initializeApp(functions.config().firebase);
 // [END import]
-const sodioDailyLimit = 4;
-const fosforoDailyLimit = 800;
-const potassioDailyLimit = 1000;
-const hidricoDailyLimit = 500;
+const limiteSodioDiarioPadrao = 4;
+const limiteFosforoDiarioPadrao = 800;
+const limitePotassioDiarioPadrao = 1000;
+const limiteHidricoDiarioPadrao = 500;
+const limiteHidricoDiarioTotal = functions.database.ref('/users/{userId}/controle_hidrico/limite_hidrico_diario_total').on('value', function(snapshot) {
+  return snapshot.val();
+});
 
-// Function to calculate percentual of nutrients
+// [START percentualNutricional Function]
 const percentualNutricional = (fosforo, potassio, sodio) => {
-  const fosforoPercentual = fosforo/fosforoDailyLimit
-  const potassioPercentual = potassio/potassioDailyLimit
-  const sodioPercentual = sodio/sodioDailyLimit
+  const fosforoPercentual = fosforo/limiteFosforoDiarioPadrao
+  const potassioPercentual = potassio/limitePotassioDiarioPadrao
+  const sodioPercentual = sodio/limiteSodioDiarioPadrao
 
   const percentualAtingido = {
     fosforo: fosforoPercentual.toPrecision(2),
     potassio: potassioPercentual.toPrecision(2),
     sodio: sodioPercentual.toPrecision(2)
   };
-
   return percentualAtingido;
 }
 
-// Function to calculate percentual hidric
+// [START percentualHidrico Function]
 const percentualHidrico = (hidrico) => {
 
-  const percentualHidricoAtingido = hidrico/hidricoDailyLimit;
+  const percentualHidricoAtingido = hidrico/limiteHidricoDiarioPadrao;
 
   return percentualHidricoAtingido.toPrecision(2);
-
 }
+// [END percentualHidrico Function]
 
 // [START calculoLimitesDiarios]
 // Listens for new user insertions added to /users/{userId}/consumo_alimentar/{date} and calculate
@@ -46,7 +48,6 @@ exports.calculoLimitesDiarios = functions.database.ref('/users/{userId}/consumo_
     var potassioTotalDiario = 0;
     var sodioTotalDiario = 0;
     var hidricoTotalDiario = 0;
-    var messages = [];
 
     // Obtem o Expo token do usuário
     const userUid = event.params.userId;
@@ -98,19 +99,18 @@ exports.calculoLimitesDiarios = functions.database.ref('/users/{userId}/consumo_
 // [START limiteHidricoDiario]
 // Listens for new messages added to /messages/:pushId/original and creates an
 // uppercase version of the message to /messages/:pushId/uppercase
-exports.limiteHidricoDiario = functions.database.ref('/users/{userId}/volume_urinario')
+exports.calculoLimiteHidricoDiarioTotal = functions.database.ref('/users/{userId}/controle_hidrico')
     .onWrite(event => {
       // Grab the current value of what was written to the Realtime Database.
       const volumeUrinario = event.data.val();
+      console.log('Volume Urinario', volumeUrinario.volume_urinario_fornecido);
 
-      const limiteHidrico = hidricoDailyLimit + volumeUrinario;
+      const limiteHidrico = limiteHidricoDiarioPadrao + volumeUrinario.volume_urinario_fornecido;
 
       console.log('Volume Urinário', limiteHidrico);
-      // You must return a Promise when performing asynchronous tasks inside a Functions such as
-      // writing to the Firebase Realtime Database.
-      // Setting an "uppercase" sibling in the Realtime Database returns a Promise.
-      return admin.database().ref('/users/' + event.params.userId + '/limite_hidrico_diario/').set(limiteHidrico);
-      //return event.data.ref.parent.child('limite_hidrico_diario').set(limiteHidrico);
+
+      //return admin.database().ref('/users/' + event.params.userId + '/limite_hidrico_diario/').set(limiteHidrico);
+      return event.data.ref.child('limite_hidrico_diario_total').set(limiteHidrico);
     });
 // [END limiteHidricoDiario]
 // [END all]
