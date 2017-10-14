@@ -102,7 +102,7 @@ exports.calculoLimiteHidricoDiarioTotal = functions.database.ref('/users/{userId
       const volumeUrinario = event.data.val();
       console.log('Volume Urinario', volumeUrinario.volume_urinario_fornecido);
 
-      const limiteHidrico = limiteHidricoDiarioPadrao + volumeUrinario.volume_urinario_fornecido;
+      const limiteHidrico = 500 + volumeUrinario.volume_urinario_fornecido;
 
       console.log('Volume Urinário', limiteHidrico);
 
