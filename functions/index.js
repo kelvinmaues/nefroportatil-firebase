@@ -7,7 +7,7 @@ var expo = new Expo();
 const admin = require('firebase-admin');
 admin.initializeApp(functions.config().firebase);
 // [END import]
-const limiteSodioDiarioPadrao = 4;
+const limiteSodioDiarioPadrao = 2;
 const limiteFosforoDiarioPadrao = 800;
 const limitePotassioDiarioPadrao = 2000;
 
